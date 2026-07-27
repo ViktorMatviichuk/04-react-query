@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import ReactPaginateModule from "react-paginate";
 import type { ReactPaginateProps } from "react-paginate";
 import type { ComponentType } from "react";
@@ -27,22 +27,21 @@ function App() {
   const [page, setPage] = useState(1);
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
 
-  const { data, isFetching, isError } = useQuery({
+  const { data, isFetching, isError, isSuccess } = useQuery({
     queryKey: ["movies", query, page],
     queryFn: async () => {
-      try {
-        const response = await fetchMovies(query, page);
-        if (response.results.length === 0) {
-          toast.error("No movies found for your request.");
-        }
-        return response;
-      } catch (error) {
-        toast.error("Something went wrong.");
-        throw error;
-      }
+      const response = await fetchMovies(query, page);
+      return response;
     },
+    placeholderData: keepPreviousData,
     enabled: !!query,
   });
+
+  useEffect(() => {
+    if (isSuccess && data?.results.length === 0) {
+      toast.error("No movies found for your request.");
+    }
+  }, [isSuccess, data]);
 
   const openModal = (movie: Movie) => {
     setSelectedMovie(movie);
